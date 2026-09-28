@@ -1,4 +1,10 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This repository contains the Nexora Next.js workspace and a guarded FastAPI AI service.
+
+## AI service
+
+The API lives in `backend/` and exposes `GET /health` plus authenticated `POST /v1/chat`. It validates Supabase sessions, reserves usage atomically in Postgres, enforces per-user request and daily-token limits, and applies a global monthly spending ceiling. Groq is the primary provider and Gemini is the fallback; both are optional at deploy time.
+
+The default controls are 10 requests per minute per user, 50,000 tokens per user per UTC day, a $25 monthly global ceiling, a 30-second provider timeout, and one retry before fallback. Configure them with the variables documented in `.env.example`.
 
 ## Getting Started
 

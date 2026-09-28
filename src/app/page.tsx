@@ -6,6 +6,7 @@ import { ArrowUp, Bot, Check, ChevronDown, CircleHelp, Command, Database, Menu, 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { createClient } from "@/lib/supabase/client";
 
 type Message = { id: number; role: "assistant" | "user"; content: string };
 
@@ -26,18 +27,46 @@ export default function Home() {
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  function sendMessage(event?: FormEvent) {
+  async function sendMessage(event?: FormEvent) {
     event?.preventDefault();
     const content = draft.trim();
-    if (!content) return;
+    if (!content || sending) return;
     const now = Date.now();
-    setMessages((current) => [
-      ...current,
-      { id: now, role: "user", content },
-      { id: now + 1, role: "assistant", content: "Your interface is working in demo mode. Connect an OpenAI API key when you are ready to enable live model responses; the production UI and data foundation are already in place." },
-    ]);
+    setMessages((current) => [...current, { id: now, role: "user", content }]);
     setDraft("");
+    setSending(true);
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL;
+      if (!apiUrl) throw new Error("The AI service URL is not configured.");
+
+      const supabase = createClient();
+      const { data } = await supabase.auth.getSession();
+      if (!data.session?.access_token) {
+        throw new Error("Sign in is required before using the guarded AI service.");
+      }
+
+      const response = await fetch(`${apiUrl}/v1/chat`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${data.session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages: [{ role: "user", content }], max_output_tokens: 512 }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        const code = result?.detail?.code ?? "ai_request_failed";
+        throw new Error(code === "no_ai_provider_configured" ? "The secure AI service is ready. Add a Groq or Gemini key to enable live answers." : `Request stopped safely: ${code.replaceAll("_", " ")}.`);
+      }
+      setMessages((current) => [...current, { id: now + 1, role: "assistant", content: result.content }]);
+    } catch (error) {
+      setMessages((current) => [...current, { id: now + 1, role: "assistant", content: error instanceof Error ? error.message : "The AI service is temporarily unavailable." }]);
+    } finally {
+      setSending(false);
+    }
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -97,7 +126,7 @@ export default function Home() {
           <header className="flex h-16 shrink-0 items-center gap-3 border-b border-white/[0.07] px-4 sm:px-6">
             <Button aria-label="Open navigation" className="text-slate-400 lg:hidden" onClick={() => setSidebarOpen(true)} size="icon" variant="ghost"><Menu /></Button>
             <div className="min-w-0">
-              <div className="flex items-center gap-2"><h1 className="truncate text-sm font-semibold">Platform launch plan</h1><Badge className="border-amber-400/20 bg-amber-400/10 text-[10px] text-amber-300" variant="outline">Demo mode</Badge></div>
+              <div className="flex items-center gap-2"><h1 className="truncate text-sm font-semibold">Platform launch plan</h1><Badge className="border-emerald-400/20 bg-emerald-400/10 text-[10px] text-emerald-300" variant="outline">Guarded API</Badge></div>
               <p className="text-[11px] text-slate-600">Private conversation</p>
             </div>
             <div className="ml-auto flex items-center gap-2">
@@ -132,11 +161,11 @@ export default function Home() {
                   <div className="rounded-2xl border border-white/10 bg-[#111722] p-2 shadow-[0_20px_60px_rgba(0,0,0,0.28)] transition focus-within:border-blue-400/35 focus-within:ring-4 focus-within:ring-blue-400/[0.06]">
                     <Textarea aria-label="Message Nexora" className="min-h-14 resize-none border-0 bg-transparent px-3 py-2.5 text-sm text-slate-200 shadow-none placeholder:text-slate-600 focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent" onChange={(event) => setDraft(event.target.value)} onKeyDown={handleKeyDown} placeholder="Ask about your product, architecture, or next feature…" value={draft} />
                     <div className="flex items-center justify-between gap-3 px-1 pt-1">
-                      <button className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11px] text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-300" type="button"><Zap className="size-3.5 text-blue-400" />Demo assistant<ChevronDown className="size-3" /></button>
-                      <Button aria-label="Send message" className="size-8 rounded-xl bg-blue-500 text-white hover:bg-blue-400" disabled={!draft.trim()} size="icon" type="submit"><ArrowUp className="size-4" /></Button>
+                      <button className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11px] text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-300" type="button"><Zap className="size-3.5 text-blue-400" />Groq → Gemini<ChevronDown className="size-3" /></button>
+                      <Button aria-label="Send message" className="size-8 rounded-xl bg-blue-500 text-white hover:bg-blue-400" disabled={!draft.trim() || sending} size="icon" type="submit"><ArrowUp className="size-4" /></Button>
                     </div>
                   </div>
-                  <p className="mt-2 text-center text-[10px] text-slate-700">Enter to send · Shift + Enter for a new line · Demo responses only</p>
+                  <p className="mt-2 text-center text-[10px] text-slate-700">Enter to send · Sign-in and usage limits are enforced · {sending ? "Contacting provider…" : "Ready"}</p>
                 </form>
               </div>
             </div>
