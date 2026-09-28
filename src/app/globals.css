@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: #080b12;
+  --foreground: #f8fafc;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --primary: oklch(0.55 0.19 264);
@@ -68,4 +68,16 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+}
+
+* {
+  scrollbar-color: rgb(51 65 85 / 0.7) transparent;
+  scrollbar-width: thin;
+}
+
+::selection {
+  background: rgb(59 130 246 / 0.35);
+  color: white;
 }

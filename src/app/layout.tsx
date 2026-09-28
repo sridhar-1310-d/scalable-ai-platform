@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Scalable AI Platform",
-  description: "A production-ready Next.js and Supabase application foundation.",
+  title: "Nexora — AI Workspace",
+  description: "A focused workspace to build, operate, and scale AI products.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
