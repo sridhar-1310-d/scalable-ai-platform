@@ -1,0 +1,13 @@
+.git
+.next
+.corepack
+.npm-cache
+.pnpm-home
+.pnpm-store
+.tmp
+.tools
+node_modules
+node_modules.partial
+node_modules.pnpm-partial
+.env.local
+npm-debug.log*
