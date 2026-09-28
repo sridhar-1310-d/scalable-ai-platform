@@ -7,6 +7,12 @@
 /.npm-cache
 /.pnpm-home
 /.pnpm-store
+/.pnpm-cache-global
+/.pnpm-cache-global-old
+/.pnpm-dlx-cache
+/.xdg-cache
+/.xdg-data
+/.xdg-state
 /.corepack
 /.tmp
 /.tools
